@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from users.permissions import IsOwnerForUser, IsTaskgiver
 from rest_framework.permissions import IsAdminUser
-from django.db.models import Count
 from tasks.services import sort_by_tasks
 
 

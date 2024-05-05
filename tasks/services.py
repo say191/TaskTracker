@@ -1,6 +1,5 @@
 from users.models import User
 from django.db.models import Count
-from django.contrib.auth.models import Group
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -12,9 +11,8 @@ def sort_by_tasks():
     The first step is to search for all users who don't belong to the group named Taskgiver.
     The second step is to exclude adminuser from user list.
     The next is the list by number of tasks."""
-    group, created = Group.objects.get_or_create(name='Taskgiver')
-    users = User.objects.exclude(groups=group)
-    return users.filter(is_superuser=False).annotate(task_count=Count('tasks')).order_by('task_count')
+    users = User.objects.exclude(groups__name='Taskgiver')
+    return users.filter(is_superuser=False, is_staff=False).annotate(task_count=Count('tasks')).order_by('task_count')
 
 
 def choose_executor(task):
