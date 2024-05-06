@@ -62,16 +62,21 @@ def send_mail_for_taskgiver(task):
 
 def get_important_tasks():
     """Function for getting list of strings consisted from important tasks (linked tasks)
-    and users who can do this important tasks"""
-    important_tasks_with_users = []
+    and users who can do this important tasks. The func iterates all tasks with created status
+    and then iterates all users in sorted list by count of tasks to choose users with parent task and
+    condition (the least busy employee or an employee performing a parent task if he is assigned
+    a maximum of 2 more tasks than the least busy employee)"""
     users = list(sort_by_tasks())
     tasks = list(Task.objects.filter(status='created'))
+    results = []
     for task in tasks:
         if task.parent_task:
+            employees = []
             for user in users:
                 if task.parent_task in user.tasks.all():
                     if user.tasks.all().count() - users[0].tasks.all().count() <= 2:
-                        important_tasks_with_users.append(f"{task} - {task.term} - {user.fio}")
-                    else:
-                        important_tasks_with_users.append(f"{task} - {task.term} - {users[0].fio}")
-    return important_tasks_with_users
+                        employees.append(user)
+            if len(employees) ==0:
+                employees.append(users[0])
+            results.append(f"{task} - {task.term} - {employees}")
+    return results
