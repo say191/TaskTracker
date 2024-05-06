@@ -4,6 +4,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from django.conf import settings
+from tasks.models import Task
 
 
 def sort_by_tasks():
@@ -12,7 +13,7 @@ def sort_by_tasks():
     The second step is to exclude adminuser from user list.
     The next is the list by number of tasks."""
     users = User.objects.exclude(groups__name='Taskgiver')
-    return users.filter(is_superuser=False, is_staff=False).annotate(task_count=Count('tasks')).order_by('task_count')
+    return users.filter(is_superuser=False).annotate(task_count=Count('tasks')).order_by('task_count')
 
 
 def choose_executor(task):
@@ -29,9 +30,9 @@ def choose_executor(task):
     return users[0]
 
 
-def send_mail_for_executor(task, user):
+def send_mail_for_executor(task):
     """Function for sending email to executor to tell him about new task"""
-    text = (f"Hello {user.fio}!\n"
+    text = (f"Hello {task.executor.fio}!\n"
             f"You have gotten one new task: {task.title}\n"
             f"{task.description}\n"
             f"Deadline is {task.term}")
@@ -41,13 +42,13 @@ def send_mail_for_executor(task, user):
     connection = smtplib.SMTP(settings.EMAIL_HOST)
     connection.starttls()
     connection.login(user=settings.EMAIL_HOST_USER, password=settings.EMAIL_HOST_PASSWORD)
-    connection.sendmail(from_addr=settings.EMAIL_HOST_USER, to_addrs=user.email, msg=message.as_string())
+    connection.sendmail(from_addr=settings.EMAIL_HOST_USER, to_addrs=task.executor.email, msg=message.as_string())
     connection.close()
 
 
 def send_mail_for_taskgiver(task):
     """Function for sending email to taskgiver to tell him that task has been completed"""
-    text = (f"Hello {task.owner}!\n"
+    text = (f"Hello {task.owner.fio}!\n"
             f"The task - {task.title} has been done\n")
     message = MIMEMultipart()
     message['Subject'] = "Report about completed task!"
@@ -55,6 +56,22 @@ def send_mail_for_taskgiver(task):
     connection = smtplib.SMTP(settings.EMAIL_HOST)
     connection.starttls()
     connection.login(user=settings.EMAIL_HOST_USER, password=settings.EMAIL_HOST_PASSWORD)
-    taskgiver = User.objects.get(fio=task.owner)
-    connection.sendmail(from_addr=settings.EMAIL_HOST_USER, to_addrs=taskgiver.email, msg=message.as_string())
+    connection.sendmail(from_addr=settings.EMAIL_HOST_USER, to_addrs=task.owner.email, msg=message.as_string())
     connection.close()
+
+
+def get_important_tasks():
+    """Function for getting list of strings consisted from important tasks (linked tasks)
+    and users who can do this important tasks"""
+    important_tasks_with_users = []
+    users = list(sort_by_tasks())
+    tasks = list(Task.objects.filter(status='created'))
+    for task in tasks:
+        if task.parent_task:
+            for user in users:
+                if task.parent_task in user.tasks.all():
+                    if user.tasks.all().count() - users[0].tasks.all().count() <= 2:
+                        important_tasks_with_users.append(f"{task} - {task.term} - {user.fio}")
+                    else:
+                        important_tasks_with_users.append(f"{task} - {task.term} - {users[0].fio}")
+    return important_tasks_with_users

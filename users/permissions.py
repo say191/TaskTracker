@@ -10,7 +10,7 @@ class IsOwnerForUser(BasePermission):
 class IsOwnerForTask(BasePermission):
     """Permission for task owner"""
     def has_object_permission(self, request, view, obj):
-        return request.user.fio == obj.owner
+        return request.user == obj.owner
 
 
 class IsTaskgiver(BasePermission):

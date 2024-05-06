@@ -11,5 +11,6 @@ urlpatterns = [
     path('update/<int:pk>/', v.TaskUpdateAPIView.as_view(), name='task_update'),
     path('delete/<int:pk>/', v.TaskDestroyAPIView.as_view(), name='task_delete'),
     path('find_exe/<int:pk>/', v.FindExecutorAPIView.as_view(), name='find_exe'),
-    path('done/<int:pk>/', v.TaskIsDoneAPIView.as_view(), name='task_done')
+    path('done/<int:pk>/', v.TaskIsDoneAPIView.as_view(), name='task_done'),
+    path('important_tasks/', v.ImportantTasksAPIView.as_view(), name='important_tasks')
 ]

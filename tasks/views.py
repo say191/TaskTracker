@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import Group
+from tasks.services import get_important_tasks
 
 
 class TaskCreateAPIView(generics.CreateAPIView):
@@ -17,7 +18,7 @@ class TaskCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         new_task = serializer.save()
-        new_task.owner = self.request.user.fio
+        new_task.owner = self.request.user
         new_task.save()
 
 
@@ -56,14 +57,14 @@ class FindExecutorAPIView(APIView):
         try:
             task = Task.objects.filter(status='created').get(id=pk)
             user = choose_executor(task)
-            task.executor = user.fio
+            task.executor = user
             task.status = 'worked'
             task.save()
             user.tasks.add(task)
             group, created = Group.objects.get_or_create(name='Executor')
             user.groups.add(group)
             user.save()
-            send_mail_for_executor(task, user)
+            send_mail_for_executor(task)
             return Response({'message': f'{task.title} - {task.term} - {task.executor}.'}, status=status.HTTP_200_OK)
         except Task.DoesNotExist:
             return Response({"error": "This task not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -85,3 +86,11 @@ class TaskIsDoneAPIView(APIView):
             return Response({'message': 'The task is marked as completed'}, status=status.HTTP_200_OK)
         except Task.DoesNotExist:
             return Response({'error': 'This task not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ImportantTasksAPIView(APIView):
+    """View for displaying important tasks for which an executor has not yet been assigned
+    and users who can be assigned as executors"""
+    def get(self, request):
+        message = get_important_tasks()
+        return Response({'message': f"{message}"}, status=status.HTTP_200_OK)
