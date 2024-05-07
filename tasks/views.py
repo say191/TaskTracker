@@ -91,6 +91,7 @@ class TaskIsDoneAPIView(APIView):
 class ImportantTasksAPIView(APIView):
     """View for displaying important tasks for which an executor has not yet been assigned
     and users who can be assigned as executors"""
+    permission_classes = [IsTaskgiver, ]
     def get(self, request):
         message = get_important_tasks()
         return Response({'message': f"{message}"}, status=status.HTTP_200_OK)

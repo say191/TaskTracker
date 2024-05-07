@@ -76,7 +76,7 @@ def get_important_tasks():
                 if task.parent_task in user.tasks.all():
                     if user.tasks.all().count() - users[0].tasks.all().count() <= 2:
                         employees.append(user)
-            if len(employees) ==0:
+            if len(employees) == 0:
                 employees.append(users[0])
             results.append(f"{task} - {task.term} - {employees}")
     return results
